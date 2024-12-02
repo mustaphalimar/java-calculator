@@ -1,19 +1,15 @@
 import java.awt.event.*;
 import java.awt.*;
-import java.util.concurrent.*;
 import javax.swing.*;
 
 public class Main extends JFrame implements ActionListener {
     private double a, b;
     private int operator;
-    private final ExecutorService executor;
     private final JButton[] numberButtons = new JButton[10];
     private final JButton bAdd, bSub, bMul, bDiv, bEq, bDec, bClear;
     private final JTextField tf;
 
     public Main() {
-        executor = Executors.newSingleThreadExecutor();
-
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setTitle("CALCULATOR WITH THREADS");
         setSize(400, 500);
@@ -73,7 +69,7 @@ public class Main extends JFrame implements ActionListener {
     public void actionPerformed(ActionEvent e) {
         for (int i = 0; i < 10; i++) {
             if (e.getSource() == numberButtons[i]) {
-                if(tf.getText().equals("0")){
+                if (tf.getText().equals("0")) {
                     tf.setText("");
                 }
                 tf.setText(tf.getText() + i);
@@ -109,19 +105,34 @@ public class Main extends JFrame implements ActionListener {
     private void calculateResult() {
         try {
             b = Double.parseDouble(tf.getText());
-            executor.submit(() -> {
-                double result = 0;
-                switch (operator) {
-                    case 1: result = a + b; break;
-                    case 2: result = a - b; break;
-                    case 3: result = a * b; break;
-                    case 4: result = b != 0 ? a / b : Double.NaN; break;
-                }
-                final double finalResult = result;
-                SwingUtilities.invokeLater(() -> tf.setText(String.valueOf(finalResult)));
-            });
+            Thread calculationThread = new Thread(new CalculationTask(a, b, operator));
+            calculationThread.start();
         } catch (NumberFormatException ex) {
             tf.setText("Error");
+        }
+    }
+
+    private class CalculationTask implements Runnable {
+        private final double num1, num2;
+        private final int op;
+
+        public CalculationTask(double num1, double num2, int op) {
+            this.num1 = num1;
+            this.num2 = num2;
+            this.op = op;
+        }
+
+        @Override
+        public void run() {
+            double result = 0;
+            switch (op) {
+                case 1: result = num1 + num2; break;
+                case 2: result = num1 - num2; break;
+                case 3: result = num1 * num2; break;
+                case 4: result = num2 != 0 ? num1 / num2 : Double.NaN; break;
+            }
+            final double finalResult = result;
+            SwingUtilities.invokeLater(() -> tf.setText(String.valueOf(finalResult)));
         }
     }
 
